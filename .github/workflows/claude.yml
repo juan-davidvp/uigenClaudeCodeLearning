@@ -1,5 +1,4 @@
 name: Claude Code
-
 on:
   issue_comment:
     types: [created]
@@ -19,40 +18,52 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write        # ← cambiado de read a write
+      pull-requests: write   # ← cambiado de read a write
+      issues: write          # ← cambiado de read a write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
-      
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          
+
       - name: Project Setup
         run: |
+          # Instalar sqlite3 CLI
+          sudo apt-get install -y sqlite3
+
+          # Instalar dependencias y correr migraciones
           npm run setup
+
+          # Lanzar Next.js en background
           npm run dev:daemon
+
+          # Esperar hasta que el servidor esté listo (máx 60s)
+          echo "Waiting for Next.js to be ready..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
-
           custom_instructions: |
             The project is already set up with all dependencies installed.
             The server is already running at localhost:3000. Logs from it
             are being written to logs.txt. If needed, you can query the
             db with the 'sqlite3' cli. If needed, use the mcp__playwright
             set of tools to launch a browser and interact with the app.
-
           mcp_config: |
             {
               "mcpServers": {
@@ -66,5 +77,4 @@ jobs:
                 }
               }
             }
-
-          allowed_tools: "Bash(npm:*),Bash(sqlite3:*),mcp__playwright__browser_snapshot,mcp__playwright__browser_click,..."
+          allowed_tools: "Bash(npm:*),Bash(sqlite3:*),mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_navigate,mcp__playwright__browser_type,mcp__playwright__browser_select_option"
