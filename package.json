@@ -33,7 +33,7 @@
     "cmdk": "^1.1.1",
     "jose": "^6.0.11",
     "lucide-react": "^0.517.0",
-    "next": "15.3.3",
+    "next": "15.5.14",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
@@ -62,5 +62,9 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "dompurify": "^3.3.3",
+    "jsondiffpatch": "^0.7.3"
   }
 }
